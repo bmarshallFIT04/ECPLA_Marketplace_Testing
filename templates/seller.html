@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block title %}
+Seller Dashboard
+{% endblock %}
+
+{% block content %}
+
+<h1>Seller Dashboard</h1>
+
+<!-- ========================================================================= -->
+<!-- FEATURE: Seller Dashboard & Add Product Functionality                     -->
+<!-- ========================================================================= -->
+<section class="seller-section">
+    <h2>My Products</h2>
+
+    <div class="seller-actions">
+        <!-- Replaced anchor link with an interactive button to trigger the form popup -->
+        <button id="toggleFormBtn" class="btn seller-action-button">
+            Add Product
+        </button>
+        <a href="/archive"><button type="button" class="seller-action-button">View Product Archive</button></a>
+    </div>
+
+    <!-- Hidden form container that pops up when the Add Product button is clicked -->
+    <div id="addProductContainer" style="display: none; background: #fdfdfd; padding: 20px; border: 1px solid #ccc; border-radius: 5px; margin-bottom: 20px;">
+        <h3>Add Product to Catalog</h3>
+        <form id="addProductForm">
+            <div style="margin-bottom: 10px;">
+                <label for="title">Product Title:</label><br>
+                <input type="text" id="title" name="title" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label for="description">Description:</label><br>
+                <textarea id="description" name="description" style="width: 100%; padding: 8px; box-sizing: border-box;"></textarea>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label for="price">Price ($):</label><br>
+                <!-- Enforces minimum price validation matching the database check -->
+                <input type="number" id="price" name="price" step="0.01" min="0.01" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label for="stock_quantity">Stock Quantity:</label><br>
+                <!-- Enforces non-negative stock validation matching the database check -->
+                <input type="number" id="stock_quantity" name="stock_quantity" min="0" required style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <label for="tags">Tags (comma-separated):</label><br>
+                <input type="text" id="tags" name="tags" placeholder="e.g. ceramic, handmade, blue" style="width: 100%; padding: 8px; box-sizing: border-box;">
+            </div>
+
+            <button type="submit" style="background: #2d5a27; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">Save Product</button>
+        </form>
+        <div id="formMessage" style="margin-top: 10px; font-weight: bold;"></div>
+    </div>
+
+    <div class="product-grid">
+        {% for product in products %}
+        <div class="product-card">
+            <div class="product-card-content">
+                <h3 class="p-title">{{ product.title }}</h3>
+                <p class="p-price">Price: ${{ "%.2f"|format(product.price) }}</p>
+                <p class="p-stock">Stock: {{ product.stock }}</p>
+                <p>Status: On Sale</p>
+
+                <!-- Product tags: click × to remove one, or edit the full list below -->
+                <div class="tag-list" data-product-id="{{ product.id }}">
+                    {% for tag in product.tags %}
+                    <span class="tag">
+                        {{ tag }}
+                        <button type="button" class="tag-remove" data-tag="{{ tag }}" aria-label="Remove tag {{ tag }}">&times;</button>
+                    </span>
+                    {% else %}
+                    <span class="no-tags">No tags yet</span>
+                    {% endfor %}
+                </div>
+
+                <form class="tag-form" data-product-id="{{ product.id }}">
+                    <label for="tags-{{ product.id }}">Edit Tags (comma-separated)</label>
+                    <input type="text" id="tags-{{ product.id }}" value="{{ product.tags|join(', ') }}">
+                    <button type="submit">Save Tags</button>
+                </form>
+
+                {# Bryan Bermudez- Edit and Delete buttons #}
+                {% include "_product_manage.html" %}
+                <button>Toggle Sale Status</button>
+                <button>Archive</button>
+            </div>
+        </div>
+        {% else %}
+        <p>You haven't added any products yet.</p>
+        {% endfor %}
+    </div>
+</section>
+
+<!-- Orders placed for this seller's products; open one to add a tracking number or status update -->
+<section class="seller-section">
+    <h2>Orders</h2>
+
+    {% if seller_orders %}
+    <!-- Wrapper scrolls sideways on narrow screens instead of squashing the table -->
+    <div class="table-wrapper">
+        <table class="orders-table">
+            <thead>
+                <tr>
+                    <th scope="col">Order #</th>
+                    <th scope="col">Product</th>
+                    <th scope="col">Buyer</th>
+                    <th scope="col">Order Date</th>
+                    <th scope="col" class="numeric">Paid</th>
+                    <th scope="col">Shipment Status</th>
+                    <th scope="col">Tracking Number</th>
+                    <th scope="col"><span class="visually-hidden">Actions</span></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in seller_orders %}
+                <tr>
+                    <td>{{ order.order_id }}</td>
+                    <td>{{ order.product_title }} &times; {{ order.quantity }}</td>
+                    <!-- Orders placed without an account are guest orders -->
+                    <td>{{ order.buyer_username or "Guest" }}</td>
+                    <td>{{ order.date }}</td>
+                    <td class="numeric">${{ "%.2f"|format(order.total) }}</td>
+                    <td>{{ order.status }}</td>
+                    <td>{{ order.tracking_number or "Not added yet" }}</td>
+                    <td>
+                        <a href="{{ url_for('order_detail', order_id=order.order_id) }}">View / Update</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <p>No orders yet.</p>
+    {% endif %}
+</section>
+
+<!-- Buyers who have ordered from this seller; sellers can only start conversations with these buyers -->
+<section class="seller-section">
+    <h2>My Buyers</h2>
+
+    {% for buyer in buyers %}
+    <div class="order-card">
+        <h3>{{ buyer.username }} (User #{{ buyer.user_id }})</h3>
+        <p>Orders: {{ buyer.order_count }}</p>
+        <p>Latest Order: {{ buyer.last_order_date }}</p>
+        <a href="{{ url_for('conversation', other_id=buyer.user_id, subject='Thank you for your order!') }}">
+            <button type="button">Message Buyer</button>
+        </a>
+    </div>
+    {% else %}
+    <p>No one has ordered your products yet.</p>
+    {% endfor %}
+</section>
+
+<section>
+    <h2>Seller Analytics</h2>
+    <!-- Calculated from every order placed for this seller's products -->
+    <p>Total Items in Buyer Carts: {{ total_in_carts }}</p>
+    <p>Revenue: ${{ "%.2f"|format(sales.revenue) }}</p>
+    <p>Products Sold: {{ sales.units_sold }} (across {{ sales.order_count }} order{{ "" if sales.order_count == 1 else "s" }})</p>
+    <!-- Returns aren't saved to the database yet (the Return form doesn't store anything) -->
+    <p>Products Returned: Not tracked yet</p>
+</section>
+
+<!-- ========================================================================= -->
+<!-- JAVASCRIPT CONTROLLER FOR ADD PRODUCT POPUP & BACKEND SUBMISSION         -->
+<!-- ========================================================================= -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const toggleBtn = document.getElementById('toggleFormBtn');
+        const formContainer = document.getElementById('addProductContainer');
+
+        // Toggle form visibility when clicking the Add Product button
+        if (toggleBtn && formContainer) {
+            toggleBtn.addEventListener('click', () => {
+                if (formContainer.style.display === 'none' || formContainer.style.display === '') {
+                    formContainer.style.display = 'block';
+                    toggleBtn.textContent = 'Cancel';
+                    toggleBtn.style.backgroundColor = '#888';
+                } else {
+                    formContainer.style.display = 'none';
+                    toggleBtn.textContent = 'Add Product';
+                    toggleBtn.style.backgroundColor = '';  // back to the .seller-action-button color
+                }
+            });
+        }
+
+        // Handle submitting product data asynchronously to the Flask backend route
+        const addProductForm = document.getElementById('addProductForm');
+        if (addProductForm) {
+            addProductForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+
+                const formData = {
+                    title: document.getElementById('title').value,
+                    description: document.getElementById('description').value,
+                    price: parseFloat(document.getElementById('price').value),
+                    stock_quantity: parseInt(document.getElementById('stock_quantity').value),
+                    tags: document.getElementById('tags').value.split(',')
+                };
+
+                const messageDiv = document.getElementById('formMessage');
+                messageDiv.textContent = "Saving product...";
+                messageDiv.style.color = "blue";
+
+                try {
+                    const response = await fetch('/api/add-product', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        messageDiv.style.color = "green";
+                        messageDiv.textContent = result.message;
+                        addProductForm.reset();
+                        setTimeout(() => {
+                            location.reload(); // Refresh to display the newly saved product
+                        }, 1500);
+                    } else {
+                        messageDiv.style.color = "red";
+                        messageDiv.textContent = result.message || "Failed to add product.";
+                    }
+                } catch (error) {
+                    console.error('Error:', error);
+                    messageDiv.style.color = "red";
+                    messageDiv.textContent = "An error occurred while connecting to the server.";
+                }
+            });
+        }
+
+        // Send a product's full new tag list to the backend, then refresh to show it
+        async function saveTags(productId, tags) {
+            try {
+                const response = await fetch(`/api/products/${productId}/tags`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ tags: tags })
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    location.reload();
+                } else {
+                    alert(result.message || "Failed to update tags.");
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert("An error occurred while connecting to the server.");
+            }
+        }
+
+        // Edit tags: save whatever is typed in the product's tag box
+        document.querySelectorAll('.tag-form').forEach((form) => {
+            form.addEventListener('submit', (e) => {
+                e.preventDefault();
+                const tags = form.querySelector('input').value.split(',');
+                saveTags(form.dataset.productId, tags);
+            });
+        });
+
+        // Remove a tag: save the product's tags without the one that was clicked
+        document.querySelectorAll('.tag-remove').forEach((button) => {
+            button.addEventListener('click', () => {
+                const tagList = button.closest('.tag-list');
+                const remainingTags = Array.from(tagList.querySelectorAll('.tag-remove'))
+                    .filter((other) => other !== button)
+                    .map((other) => other.dataset.tag);
+                saveTags(tagList.dataset.productId, remainingTags);
+            });
+        });
+    });
+</script>
+<!-- Bryan Bermudez- Edit and delete products -->
+<script src="{{ url_for('static', filename='product_manage.js') }}"></script>
+
+{% endblock %}

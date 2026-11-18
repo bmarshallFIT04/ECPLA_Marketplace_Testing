@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+
+{% block title %}
+Home
+{% endblock %}
+
+{% block content %}
+
+<section class="hero">
+
+    <h1>Handmade. Local. One of a Kind.</h1>
+
+    <p>
+        Discover unique products created by artisans
+        in your community and support local creators.
+    </p>
+
+    <a href="/products">
+        <button>Explore the Marketplace</button>
+    </a>
+
+</section>
+
+<section>
+
+    <h2>Featured from Local Sellers</h2>
+
+    <!-- The 4 best-selling products across all sellers (topped up with new products if few have sold) -->
+    <div class="product-grid">
+
+        {% for product in featured %}
+        <div class="product-card">
+
+            <div class="product-card-content">
+
+                <h3>{{ product.title }}</h3>
+
+                <p class="seller-name">
+                    Made by {{ product.seller_username or "a local seller" }}
+                </p>
+
+                {% if product.description %}
+                <p>{{ product.description }}</p>
+                {% endif %}
+
+                <p class="product-price">
+                    ${{ "%.2f"|format(product.price) }}
+                </p>
+
+                {% if product.units_sold %}
+                <p class="units-sold">{{ product.units_sold }} sold</p>
+                {% endif %}
+
+                {% if product.stock == 0 %}
+                <p class="out-of-stock">Out of stock</p>
+                {% endif %}
+
+                <a href="{{ url_for('product', product_id=product.id) }}">
+                    <button type="button">View Product</button>
+                </a>
+
+            </div>
+
+        </div>
+        {% else %}
+        <p>No products are available yet. Check back soon!</p>
+        {% endfor %}
+
+    </div>
+
+</section>
+
+{% endblock %}

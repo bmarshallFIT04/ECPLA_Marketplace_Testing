@@ -1,0 +1,965 @@
+/* ---------- Global ---------- */
+
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: "Trebuchet MS", Arial, sans-serif;
+    background-color: #f6f1e8;
+    color: #2f2a25;
+}
+
+main {
+    max-width: 1200px;
+    margin: auto;
+    padding: 40px 25px;
+}
+
+h1,
+h2,
+h3 {
+    font-family: Georgia, "Times New Roman", serif;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+
+/* ---------- Navigation ---------- */
+
+nav {
+    background-color: #29463c;
+    color: white;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 18px 45px;
+
+    border-bottom: 5px solid #c58b57;
+}
+
+.nav-left,
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+}
+
+nav a {
+    color: white;
+    transition: 0.2s;
+}
+
+nav a:hover {
+    color: #f2c894;
+}
+
+/* "Welcome: <username>" at the right end of the nav bar */
+.nav-welcome {
+    color: #f2c894;   
+}
+
+.logo {
+    font-family: Georgia, serif;
+    font-size: 23px;
+    font-weight: bold;
+    margin-right: 15px;
+}
+
+
+/* ---------- Hero ---------- */
+
+.hero {
+    position: relative;
+
+    background:
+        linear-gradient(
+            rgba(41, 70, 60, 0.88),
+            rgba(41, 70, 60, 0.88)
+        );
+
+    color: white;
+
+    padding: 90px 60px;
+
+    border-radius: 0 0 35px 35px;
+
+    margin-top: -40px;
+    margin-left: -25px;
+    margin-right: -25px;
+    margin-bottom: 55px;
+
+    text-align: left;
+}
+
+.hero h1 {
+    color: white;
+    font-size: 52px;
+    margin-bottom: 15px;
+    max-width: 700px;
+}
+
+.hero p {
+    font-size: 20px;
+    max-width: 600px;
+    line-height: 1.6;
+    color: #f0e7d8;
+}
+
+.hero button {
+    margin-top: 20px;
+}
+
+
+/* ---------- Buttons ---------- */
+
+button {
+    background-color: #c06c48;
+    color: white;
+
+    border: none;
+    border-radius: 25px;
+
+    padding: 12px 22px;
+
+    font-size: 15px;
+    font-weight: bold;
+
+    cursor: pointer;
+
+    margin-top: 12px;
+    margin-right: 8px;
+
+    transition: 0.2s;
+}
+
+button:hover {
+    background-color: #a85739;
+    transform: translateY(-2px);
+}
+
+
+/* ---------- Section Headings ---------- */
+
+section h2 {
+    font-size: 30px;
+    margin-bottom: 20px;
+    color: #29463c;
+}
+
+
+/* ---------- Products Grid ---------- */
+
+.product-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(auto-fill, minmax(230px, 1fr));
+
+    gap: 28px;
+}
+
+.search-form {
+    max-width: none;
+    padding: 20px;
+    margin-bottom: 35px;
+}
+
+.search-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+.search-row input {
+    flex: 1;
+}
+
+.search-row button {
+    margin-top: 0;
+}
+
+.filter-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.filter-row select {
+    width: auto;
+    min-width: 150px;
+}
+
+.filter-button {
+    margin-top: 0;
+}
+
+/* ---------- Product Cards ---------- */
+
+.product-card {
+    background-color: #fffdf9;
+
+    border-radius: 18px;
+
+    overflow: hidden;
+
+    padding: 0;
+
+    box-shadow:
+        0 5px 18px rgba(77, 61, 45, 0.12);
+
+    transition:
+        transform 0.25s,
+        box-shadow 0.25s;
+}
+
+.product-card:hover {
+    transform: translateY(-7px);
+
+    box-shadow:
+        0 10px 25px rgba(77, 61, 45, 0.2);
+}
+
+.product-card a {
+    display: inline-block;
+
+    margin-top: 8px;
+
+    color: #c06c48;
+    font-weight: bold;
+}
+
+.product-card a:hover {
+    color: #a85739;
+}
+
+.product-card img {
+    width: 100%;
+    height: 190px;
+    object-fit: cover;
+}
+
+.product-card-content {
+    padding: 18px;
+}
+
+.product-card h2,
+.product-card h3 {
+    margin-top: 0;
+    color: #29463c;
+}
+
+.product-price {
+    color: #c06c48;
+    font-size: 19px;
+    font-weight: bold;
+}
+
+.seller-name {
+    color: #7b6a58;
+    font-size: 14px;
+}
+
+/* "12 sold" on the home page's best sellers */
+.units-sold {
+    color: #2d5a27;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.seller-actions {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.seller-actions button {
+    margin-top: 0;
+}
+
+/* Rectangular seller dashboard buttons ("Add Product", "View Product Archive") */
+.seller-action-button {
+    background-color: #b56536;
+    color: white;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    margin-bottom: 15px;
+}
+
+
+/* ---------- Forms ---------- */
+
+form {
+    background-color: #fffdf9;
+
+    padding: 30px;
+
+    border-radius: 18px;
+
+    max-width: 520px;
+
+    box-shadow:
+        0 5px 18px rgba(77, 61, 45, 0.12);
+
+    margin-top: 20px;
+}
+
+form div {
+    margin-bottom: 18px;
+}
+
+label {
+    display: block;
+
+    margin-bottom: 7px;
+
+    font-weight: bold;
+
+    color: #4f4438;
+}
+
+input,
+select,
+textarea {
+    width: 100%;
+
+    padding: 12px;
+
+    border: 1px solid #d7c9b8;
+
+    border-radius: 10px;
+
+    background-color: #fffefa;
+
+    font-size: 15px;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+
+    border-color: #c06c48;
+
+    box-shadow:
+        0 0 0 2px rgba(192, 108, 72, 0.15);
+}
+
+
+/* ---------- Checkout Saved Information ---------- */
+
+.save-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.save-option input {
+    width: auto;
+    margin: 0;
+}
+
+.save-option label {
+    margin-bottom: 0;
+    font-weight: normal;
+}
+
+.saved-note {
+    color: #7b6a58;
+}
+
+.saved-note button {
+    margin-top: 0;
+    margin-left: 8px;
+    padding: 6px 14px;
+    font-size: 13px;
+}
+
+.item-card {
+    margin-bottom: 40px;
+}
+
+/* #Bryan Bermudez- Remove buttons on the Account page sit under their form without the form card styling */
+.remove-saved {
+    background: none;
+    box-shadow: none;
+    padding: 0;
+    margin-top: 0;
+}
+
+
+/* ---------- Product Tags ---------- */
+
+.tag-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    margin-bottom: 10px;
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+
+    background-color: #eee4d5;
+    color: #4f4438;
+
+    border-radius: 12px;
+
+    padding: 4px 4px 4px 10px;
+
+    font-size: 13px;
+}
+
+.tag-remove {
+    background: none;
+    color: #7b6a58;
+
+    padding: 0 6px;
+    margin: 0;
+
+    font-size: 15px;
+}
+
+.tag-remove:hover {
+    background-color: #dfccb1;
+    color: #2f2a25;
+    transform: none;
+}
+
+/* Tags shown to buyers have no remove button, so they get even padding */
+.tag-static {
+    padding: 4px 10px;
+}
+
+.out-of-stock {
+    color: #a85739;
+    font-weight: bold;
+}
+
+.no-tags {
+    color: #7b6a58;
+    font-size: 13px;
+}
+
+.tag-form {
+    background: none;
+    box-shadow: none;
+    padding: 0;
+    margin-top: 0;
+}
+
+.tag-form input {
+    padding: 8px;
+    font-size: 14px;
+}
+
+.tag-form button {
+    margin-top: 8px;
+}
+
+
+/* ---------- Account / Dashboard Sections ---------- */
+
+.account-card,
+.seller-section,
+.order-card,
+.cart-item,
+.message-area,
+.conversation-list {
+    background-color: #fffdf9;
+
+    padding: 25px;
+
+    margin-bottom: 25px;
+
+    border-radius: 18px;
+
+    box-shadow:
+        0 4px 15px rgba(77, 61, 45, 0.1);
+}
+
+/* ---------- Archived Products ---------- */
+
+.archived-product {
+    opacity: 0.7;
+    border: 2px dashed #b89b7a;
+}
+
+/* ---------- Messaging ---------- */
+
+.messages-container {
+    display: grid;
+
+    grid-template-columns: 260px 1fr;
+
+    gap: 25px;
+}
+
+.conversation {
+    display: block;
+
+    padding: 14px;
+
+    margin-bottom: 10px;
+
+    border-radius: 12px;
+
+    background-color: #eee4d5;
+
+    color: #2f2a25;
+
+    text-decoration: none;
+
+    cursor: pointer;
+}
+
+.conversation:hover,
+.conversation.active {
+    background-color: #dfccb1;
+}
+
+.conversation.unread .conversation-name {
+    font-weight: bold;
+}
+
+.conversation-name,
+.conversation-subject,
+.conversation-date {
+    display: block;
+}
+
+.conversation-subject {
+    font-size: 14px;
+
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.conversation-date {
+    font-size: 12px;
+
+    color: #7b6a58;
+}
+
+.unread-badge {
+    display: inline-block;
+
+    margin-left: 6px;
+
+    padding: 1px 8px;
+
+    border-radius: 10px;
+
+    background-color: #c06c48;
+
+    color: #fff;
+
+    font-size: 12px;
+}
+
+.new-message-link button {
+    width: 100%;
+
+    margin: 0 0 15px;
+}
+
+.no-conversations {
+    color: #7b6a58;
+}
+
+.form-error {
+    color: #a85739;
+    font-weight: bold;
+}
+
+.form-success {
+    color: #2d5a27;
+    font-weight: bold;
+}
+
+/* Seller Dashboard: all orders for the seller's products, as a table */
+.table-wrapper {
+    overflow-x: auto;
+    margin-bottom: 25px;
+
+    background-color: #fffdf9;
+    border: 1px solid #d7c9b8;
+    border-radius: 12px;
+}
+
+.orders-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 15px;
+}
+
+.orders-table th,
+.orders-table td {
+    padding: 12px 14px;
+    text-align: left;
+    border-bottom: 1px solid #eee4d5;
+    white-space: nowrap;
+}
+
+.orders-table th {
+    background-color: #f4ece2;
+    color: #4f4438;
+    font-weight: bold;
+}
+
+.orders-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.orders-table tbody tr:hover {
+    background-color: #fbf6f0;
+}
+
+/* Money lines up on the right */
+.orders-table .numeric {
+    text-align: right;
+}
+
+.orders-table a {
+    color: #c06c48;
+    font-weight: bold;
+}
+
+/* Label for screen readers only (e.g. the Actions column header) */
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+}
+
+/* Order tracking: shipment status history, newest at the top */
+.order-timeline {
+    list-style: none;
+    padding-left: 0;
+    margin: 0;
+}
+
+.order-timeline li {
+    border-left: 3px solid #d7c9b8;
+    padding: 4px 0 14px 16px;
+    color: #6b5e52;
+}
+
+/* The latest status stands out */
+.order-timeline li.current {
+    border-left-color: #c06c48;
+    color: #4f4438;
+}
+
+.order-timeline .conversation-date {
+    display: block;
+}
+
+.order-note {
+    margin: 6px 0 0;
+}
+
+.tracking-number {
+    font-family: monospace;
+    letter-spacing: 0.5px;
+}
+
+.message-history {
+    min-height: 120px;
+
+    margin-bottom: 20px;
+}
+
+.message {
+    max-width: 80%;
+
+    padding: 12px 16px;
+
+    margin-bottom: 12px;
+
+    border-radius: 18px;
+}
+
+.message-header {
+    display: flex;
+    flex-direction: column;
+
+    margin-bottom: 8px;
+    padding-bottom: 8px;
+
+    border-bottom: 1px solid rgba(77, 61, 45, 0.15);
+}
+
+.message-header span {
+    font-size: 12px;
+
+    color: #7b6a58;
+}
+
+.conversation-heading {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+}
+
+.conversation-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.blocked-users-link {
+    display: block;
+
+    margin-bottom: 15px;
+
+    color: #7b6a58;
+
+    font-size: 14px;
+}
+
+.blocked-users-link.active {
+    font-weight: bold;
+}
+
+.blocked-user {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+
+    padding: 14px;
+
+    margin-bottom: 10px;
+
+    border-radius: 12px;
+
+    background-color: #eee4d5;
+}
+
+.blocked-user .conversation-date {
+    display: block;
+}
+
+/* Delete buttons sit inline without the form card styling */
+.delete-form {
+    background: none;
+    box-shadow: none;
+    padding: 0;
+    margin: 0;
+}
+
+.delete-button {
+    margin-top: 0;
+
+    background-color: #a85739;
+}
+
+.delete-button-small {
+    margin-top: 8px;
+
+    padding: 4px 12px;
+
+    font-size: 12px;
+}
+
+/* Account page: saved shipping address and card, shown as a list */
+.saved-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 12px;
+    max-width: 520px;
+}
+
+.saved-item {
+    background-color: #fffdf9;
+    border: 1px solid #d7c9b8;
+    border-radius: 10px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+}
+
+.saved-item-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    color: #4f4438;
+}
+
+.saved-item .delete-button-small {
+    margin-top: 0;
+}
+
+/* Details on the left, Make Default / Remove on the right */
+.saved-item-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+}
+
+.saved-item-actions {
+    display: flex;
+    gap: 8px;
+    flex-shrink: 0;
+}
+
+/* The per-address Edit toggle sits inside the list item */
+.saved-item .saved-edit {
+    margin: 8px 0 0;
+}
+
+.saved-item .saved-edit summary {
+    margin-bottom: 0;
+    font-size: 14px;
+}
+
+.saved-item .saved-edit form {
+    margin-top: 12px;
+    padding: 0;
+    box-shadow: none;
+}
+
+.default-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 1px 8px;
+
+    background-color: #cfe1d7;
+    color: #2d5a27;
+    border-radius: 10px;
+
+    font-size: 12px;
+    font-weight: bold;
+}
+
+/* Checkout: pick a saved address/card or "Use a new ..." */
+.choice-list {
+    margin-bottom: 14px;
+}
+
+.choice {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+
+    border: 1px solid #d7c9b8;
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 8px;
+
+    font-weight: normal;
+    cursor: pointer;
+}
+
+.choice input {
+    width: auto;
+    margin-top: 3px;
+}
+
+.choice:has(input:checked) {
+    border-color: #c06c48;
+    background-color: #fbf1ea;
+}
+
+.saved-empty {
+    color: #7b6a58;
+    font-style: italic;
+}
+
+/* "Edit Address" / "Add Card" toggles that reveal the form */
+.saved-edit {
+    margin-bottom: 25px;
+}
+
+.saved-edit summary {
+    cursor: pointer;
+    color: #c06c48;
+    font-weight: bold;
+    margin-bottom: 12px;
+}
+
+/* Requirement notes under form fields (e.g. password length on Create Account) */
+.form-hint {
+    margin: 4px 0 0;
+
+    font-size: 13px;
+    color: #6b5e52;
+}
+
+/* Keep the line breaks the sender typed */
+.message-body {
+    white-space: pre-wrap;
+}
+
+.received {
+    background-color: #ece5dc;
+}
+
+.sent {
+    background-color: #cfe1d7;
+    margin-left: auto;
+}
+
+
+/* ---------- Footer ---------- */
+
+footer {
+    margin-top: 70px;
+
+    padding: 30px;
+
+    text-align: center;
+
+    background-color: #29463c;
+
+    color: #e8ddce;
+}
+
+
+/* ---------- Mobile ---------- */
+
+@media (max-width: 750px) {
+
+    nav {
+        flex-direction: column;
+        gap: 15px;
+        padding: 20px;
+    }
+
+    .nav-left,
+    .nav-right {
+        flex-wrap: wrap;
+        justify-content: center;
+    }
+
+    .hero {
+        padding: 60px 30px;
+    }
+
+    .hero h1 {
+        font-size: 38px;
+    }
+
+    .messages-container {
+        grid-template-columns: 1fr;
+    }
+}

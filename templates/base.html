@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>
+        {% block title %}
+        Local Artisan Marketplace
+        {% endblock %}
+    </title>
+
+    <link rel="stylesheet"
+          href="{{ url_for('static', filename='style.css') }}">
+</head>
+
+<body>
+
+    <nav>
+        <div class="nav-left">
+            <a href="/" class="logo">
+                Artisan Marketplace
+            </a>
+            <a href="/">Home</a>
+            <a href="/products">Products</a>
+        </div>
+
+        <div class="nav-right">
+            <a href="/cart">Cart</a>
+            <a href="/orders">Orders</a>
+            <a href="/messages">Messages</a>
+
+            <!-- Seller Dashboard is only for logged-in seller accounts -->
+            {% if is_seller %}
+            <a href="{{ url_for('seller') }}">Seller Dashboard</a>
+            {% endif %}
+            <!-- Account page is only for logged-in users -->
+            {% if session.get('username') %}
+            <a href="/account">Account</a>
+            {% endif %}
+            {# Logged-in users get Logout and a welcome message (not the "SampleUser" placeholder) #}
+            {% if session.get('username') %}
+            <a href="{{ url_for('logout') }}">Logout</a>
+            <span class="nav-welcome">Welcome: {{ session['username'] }}</span>
+            {% else %}
+            <a href="/login">Login</a>
+            {% endif %}
+        </div>
+    </nav>
+
+    <main>
+        {% block content %}
+        {% endblock %}
+    </main>
+
+    <footer>
+        <h3>Artisan Marketplace</h3>
+        <p>
+            Connecting local creators with their community.
+        </p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+
+</body>
+</html>
