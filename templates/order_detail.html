@@ -69,7 +69,32 @@ Order #{{ order.order_id }}
     </ol>
 </div>
 
-{% if viewer_is_seller %}
+{% if not viewer_is_seller and not is_cancelled %}
+<!-- Buyer-only: cancel the order while it hasn't shipped, within the seller's cancellation policy -->
+<div class="order-card">
+    <h2>Cancel Order</h2>
+    {% if cancel.allowed %}
+    <p>
+        {% if cancel.deadline %}
+        You can cancel this order until <strong>{{ cancel.deadline.strftime("%Y-%m-%d %H:%M") }}</strong>,
+        as long as it hasn't shipped by then.
+        {% else %}
+        You can cancel this order until it ships.
+        {% endif %}
+    </p>
+    <form method="POST" action="{{ url_for('order_cancel', order_id=order.order_id) }}"
+          onsubmit="return confirm('Cancel Order #{{ order.order_id }}? This cannot be undone.');">
+        <button type="submit" class="cancel-order-button">Cancel Order</button>
+    </form>
+    {% else %}
+    <p class="form-hint">{{ cancel.reason }}</p>
+    {% endif %}
+</div>
+{% endif %}
+
+{% if viewer_is_seller and is_cancelled %}
+<p class="form-hint">This order was cancelled by the buyer, so it can no longer be updated.</p>
+{% elif viewer_is_seller %}
 <!-- Seller-only: enter tracking info and post shipment updates for the buyer to see -->
 <h2>Update Shipping</h2>
 
