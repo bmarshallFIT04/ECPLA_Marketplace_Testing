@@ -141,6 +141,42 @@ Seller Dashboard
     {% endif %}
 </section>
 
+<!-- Seller chooses whether and for how long buyers can cancel orders that haven't shipped -->
+<section class="seller-section" id="cancellation-policy">
+    <h2>Order Cancellation Policy</h2>
+
+    {% for category, message in get_flashed_messages(with_categories=true) %}
+    <p class="{{ 'form-error' if category == 'error' else 'form-success' }}">{{ message }}</p>
+    {% endfor %}
+
+    <p class="form-hint">Buyers can never cancel an order after you mark it Shipped. This applies to all of your unshipped orders.</p>
+
+    <form method="POST" action="{{ url_for('seller_cancellation_policy') }}" class="cancel-policy-form">
+        <fieldset>
+            <legend>Buyers can cancel orders:</legend>
+            <label>
+                <input type="radio" name="cancel_mode" value="until_shipped"
+                       {% if cancel_policy.enabled and cancel_policy.window_hours is none %}checked{% endif %}>
+                Any time until the order ships
+            </label>
+            <label>
+                <input type="radio" name="cancel_mode" value="window"
+                       {% if cancel_policy.enabled and cancel_policy.window_hours is not none %}checked{% endif %}>
+                Only within
+                <input type="number" name="window_hours" min="1" max="{{ max_cancel_window }}"
+                       value="{{ cancel_policy.window_hours or 24 }}" aria-label="Cancellation window in hours">
+                hours of ordering (and before it ships)
+            </label>
+            <label>
+                <input type="radio" name="cancel_mode" value="disabled"
+                       {% if not cancel_policy.enabled %}checked{% endif %}>
+                Never (cancellations disabled)
+            </label>
+        </fieldset>
+        <button type="submit">Save Cancellation Policy</button>
+    </form>
+</section>
+
 <!-- Buyers who have ordered from this seller; sellers can only start conversations with these buyers -->
 <section class="seller-section">
     <h2>My Buyers</h2>

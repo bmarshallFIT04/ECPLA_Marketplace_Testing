@@ -1,5 +1,6 @@
 import sqlite3
 import os
+from datetime import datetime, timedelta
 import bcrypt
 
 # Set database path inside the project's 'instance' directory
@@ -21,6 +22,10 @@ ORDER_STATUSES = [
     "Delivered",
     "Delayed",
 ]
+# Status an order gets when the buyer cancels it. Not in ORDER_STATUSES, so sellers can't post it as an update.
+CANCELLED_STATUS = "Cancelled"
+# Longest cancellation window a seller can set (30 days)
+MAX_CANCEL_WINDOW_HOURS = 720
 MAX_TRACKING_NUMBER_LENGTH = 64
 MAX_ORDER_NOTE_LENGTH = 500
 SALT = bcrypt.gensalt(rounds=HASH_ROUNDS) # time to hash increases with rounds
@@ -178,6 +183,17 @@ def init_db():
         )
     ''')
 
+    # Initializes Seller Settings table: each seller's order cancellation policy.
+    # cancel_window_hours is NULL when buyers can cancel any time before the order ships.
+    # Sellers without a row use the default policy: cancellations allowed until shipped.
+    cursor.execute('''
+        CREATE TABLE IF NOT EXISTS seller_settings (
+            seller_id INTEGER PRIMARY KEY,
+            cancellations_enabled INTEGER NOT NULL DEFAULT 1,
+            cancel_window_hours INTEGER
+        )
+    ''')
+
     # Adds the tracking number to orders tables created before order tracking existed
     order_columns = [row[1] for row in cursor.execute('PRAGMA table_info(orders)')]
     if 'tracking_number' not in order_columns:
@@ -257,12 +273,12 @@ def list_best_selling_products(limit=4):
         SELECT p.product_id, p.title, p.description, p.price, p.stock_quantity, a.username,
                COALESCE(SUM(o.quantity), 0) AS units_sold
         FROM products p
-        LEFT JOIN orders o ON o.product_id = p.product_id
+        LEFT JOIN orders o ON o.product_id = p.product_id AND o.status != ?
         LEFT JOIN accounts a ON p.seller_id = a.user_id
         GROUP BY p.product_id
         ORDER BY units_sold DESC, p.product_id DESC
         LIMIT ?
-    ''', (limit,))
+    ''', (CANCELLED_STATUS, limit))
     rows = cursor.fetchall()
     conn.close()
     return [{"id": r[0], "title": r[1], "description": r[2], "price": r[3], "stock": r[4],
@@ -537,6 +553,10 @@ def add_order_update(order_id: int, seller_id: int, status: str, note: str = "")
     if not _is_sellers_order(cursor, order_id, seller_id):
         conn.close()
         return {"success": False, "message": "You can only update orders for your own products."}
+    cursor.execute('SELECT status FROM orders WHERE order_id = ?', (order_id,))
+    if cursor.fetchone()[0] == CANCELLED_STATUS:
+        conn.close()
+        return {"success": False, "message": "This order was cancelled by the buyer, so it can't be updated."}
 
     cursor.execute('INSERT INTO order_updates (order_id, status, note) VALUES (?, ?, ?)',
                    (order_id, status, note or None))
@@ -560,17 +580,111 @@ def get_order_updates(order_id: int) -> list:
     return [{"status": r[0], "note": r[1], "created_at": r[2]} for r in rows]
 
 
+def get_cancellation_policy(seller_id) -> dict:
+    """Returns a seller's cancellation policy: {"enabled": bool, "window_hours": int or None}.
+    window_hours None means buyers can cancel any time until the order ships.
+    Sellers who never set a policy allow cancellations until the order ships."""
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('SELECT cancellations_enabled, cancel_window_hours FROM seller_settings WHERE seller_id = ?',
+                   (seller_id,))
+    row = cursor.fetchone()
+    conn.close()
+    if row is None:
+        return {"enabled": True, "window_hours": None}
+    return {"enabled": bool(row[0]), "window_hours": row[1]}
+
+
+def set_cancellation_policy(seller_id: int, enabled: bool, window_hours=None) -> dict:
+    """Saves a seller's cancellation policy. window_hours is None (until shipped) or a whole number of hours
+    from 1 to MAX_CANCEL_WINDOW_HOURS. The policy applies to all of the seller's unshipped orders."""
+    if enabled and window_hours is not None:
+        try:
+            window_hours = int(window_hours)
+        except (TypeError, ValueError):
+            return {"success": False, "message": "Cancellation window must be a whole number of hours."}
+        if not 1 <= window_hours <= MAX_CANCEL_WINDOW_HOURS:
+            return {"success": False,
+                    "message": f"Cancellation window must be between 1 and {MAX_CANCEL_WINDOW_HOURS} hours."}
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+        INSERT INTO seller_settings (seller_id, cancellations_enabled, cancel_window_hours) VALUES (?, ?, ?)
+        ON CONFLICT(seller_id) DO UPDATE SET
+            cancellations_enabled = excluded.cancellations_enabled,
+            cancel_window_hours = excluded.cancel_window_hours
+    ''', (seller_id, 1 if enabled else 0, window_hours if enabled else None))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": "Cancellation policy saved."}
+
+
+def get_cancel_eligibility(order: dict, now=None) -> dict:
+    """Decides whether the buyer can cancel an order right now.
+    Returns {"allowed": bool, "reason": str, "deadline": datetime or None}.
+    An order can be cancelled only while its status is still the initial "Confirmed" (it hasn't shipped),
+    the seller allows cancellations, and (if the seller set a time window) the window hasn't passed."""
+    if order["status"] == CANCELLED_STATUS:
+        return {"allowed": False, "reason": "This order has been cancelled.", "deadline": None}
+    if order["status"] != DEFAULT_ORDER_STATUS:
+        return {"allowed": False, "reason": "This order has already shipped, so it can no longer be cancelled.",
+                "deadline": None}
+    if order["seller_id"] is None:
+        # The product was removed, so there's no seller policy or stock to go back to
+        return {"allowed": False, "reason": "This order can no longer be cancelled.", "deadline": None}
+
+    policy = get_cancellation_policy(order["seller_id"])
+    if not policy["enabled"]:
+        return {"allowed": False, "reason": "The seller does not accept cancellations.", "deadline": None}
+    if policy["window_hours"] is None:
+        return {"allowed": True, "reason": "", "deadline": None}
+
+    deadline = datetime.strptime(order["date"], "%Y-%m-%d %H:%M:%S") + timedelta(hours=policy["window_hours"])
+    if (now or datetime.now()) > deadline:
+        return {"allowed": False, "reason": "The seller's cancellation window for this order has passed.",
+                "deadline": deadline}
+    return {"allowed": True, "reason": "", "deadline": deadline}
+
+
+def cancel_order(order_id: int, buyer_id: int) -> dict:
+    """Cancels a buyer's own order if the seller's policy allows it: marks it Cancelled, adds a Cancelled
+    entry to its shipment history, and puts the quantity back into the product's stock."""
+    order = get_order_details(order_id)
+    if order is None or order["user_id"] != buyer_id:
+        return {"success": False, "message": "You can only cancel your own orders."}
+    eligibility = get_cancel_eligibility(order)
+    if not eligibility["allowed"]:
+        return {"success": False, "message": eligibility["reason"]}
+
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    # Only cancel if the order is still unshipped at this moment, in case the seller just posted an update
+    cursor.execute('UPDATE orders SET status = ? WHERE order_id = ? AND status = ?',
+                   (CANCELLED_STATUS, order_id, DEFAULT_ORDER_STATUS))
+    if cursor.rowcount == 0:
+        conn.close()
+        return {"success": False, "message": "This order has already shipped, so it can no longer be cancelled."}
+    cursor.execute('INSERT INTO order_updates (order_id, status, note) VALUES (?, ?, ?)',
+                   (order_id, CANCELLED_STATUS, "Cancelled by the buyer."))
+    cursor.execute('UPDATE products SET stock_quantity = stock_quantity + ? WHERE product_id = ?',
+                   (order["quantity"], order["product_id"]))
+    conn.commit()
+    conn.close()
+    return {"success": True, "message": f"Order #{order_id} has been cancelled."}
+
+
 def get_seller_sales(seller_id: int) -> dict:
     """Totals for the Seller Analytics section, from every order placed for this seller's products:
-    revenue (amount paid), units sold, and number of orders."""
+    revenue (amount paid), units sold, and number of orders. Cancelled orders are left out."""
     conn = sqlite3.connect(DB_PATH)
     cursor = conn.cursor()
     cursor.execute('''
         SELECT COALESCE(SUM(o.total), 0), COALESCE(SUM(o.quantity), 0), COUNT(o.order_id)
         FROM orders o
         JOIN products p ON o.product_id = p.product_id
-        WHERE p.seller_id = ?
-    ''', (seller_id,))
+        WHERE p.seller_id = ? AND o.status != ?
+    ''', (seller_id, CANCELLED_STATUS))
     revenue, units_sold, order_count = cursor.fetchone()
     conn.close()
     return {"revenue": revenue, "units_sold": units_sold, "order_count": order_count}

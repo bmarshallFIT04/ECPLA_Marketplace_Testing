@@ -19,6 +19,8 @@ from database import (
     get_orders, get_order_details, add_order, list_seller_buyers,
     set_tracking_number, add_order_update, get_order_updates, list_seller_orders, get_seller_sales, ORDER_STATUSES,
     MAX_TRACKING_NUMBER_LENGTH, MAX_ORDER_NOTE_LENGTH,
+    get_cancellation_policy, set_cancellation_policy, get_cancel_eligibility, cancel_order,
+    CANCELLED_STATUS, MAX_CANCEL_WINDOW_HOURS,
     MIN_USERNAME_LENGTH, MAX_USERNAME_LENGTH, MIN_PASSWORD_LENGTH, MAX_PASSWORD_LENGTH
 )
 #Bryan Bermudez- Imported product edit, delete and search modules
@@ -273,6 +275,9 @@ def render_order_detail(order_id, error=None):
         order=order,
         updates=get_order_updates(order_id),
         viewer_is_seller=viewer_is_seller,
+        # Whether the buyer can cancel this order right now, and why not if they can't
+        cancel=get_cancel_eligibility(order),
+        is_cancelled=order["status"] == CANCELLED_STATUS,
         statuses=ORDER_STATUSES,
         max_tracking=MAX_TRACKING_NUMBER_LENGTH,
         max_note=MAX_ORDER_NOTE_LENGTH,
@@ -309,6 +314,21 @@ def order_add_update(order_id):
     get_viewable_order(order_id)  # 404 for anyone who isn't the buyer or seller
     result = add_order_update(order_id, session['user_id'],
                               request.form.get("status", ""), request.form.get("note", ""))
+    if not result["success"]:
+        return render_order_detail(order_id, error=result["message"]), 400
+    flash(result["message"])
+    return redirect(url_for('order_detail', order_id=order_id))
+
+
+# Buyer cancels their own order, if it hasn't shipped and the seller's cancellation policy allows it
+@app.route("/orders/<int:order_id>/cancel", methods=["POST"])
+def order_cancel(order_id):
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    order, _ = get_viewable_order(order_id)  # 404 for anyone who isn't the buyer or seller
+    if order["user_id"] != session['user_id']:
+        abort(403)  # the seller can see the order but only the buyer can cancel it
+    result = cancel_order(order_id, session['user_id'])
     if not result["success"]:
         return render_order_detail(order_id, error=result["message"]), 400
     flash(result["message"])
@@ -421,7 +441,30 @@ def seller():
     sales = get_seller_sales(seller_id)
 
     return render_template("seller.html", products=products, total_in_carts=total_in_carts, buyers=buyers,
-                           seller_orders=seller_orders, sales=sales)
+                           seller_orders=seller_orders, sales=sales,
+                           cancel_policy=get_cancellation_policy(seller_id),
+                           max_cancel_window=MAX_CANCEL_WINDOW_HOURS)
+
+
+# Seller sets how long buyers can cancel orders: until shipped, within a time window, or not at all
+@app.route("/seller/cancellation-policy", methods=["POST"])
+def seller_cancellation_policy():
+    if 'user_id' not in session:
+        return redirect(url_for('login'))
+    if not is_seller():
+        abort(403)
+    mode = request.form.get("cancel_mode")
+    if mode == "disabled":
+        result = set_cancellation_policy(session['user_id'], enabled=False)
+    elif mode == "until_shipped":
+        result = set_cancellation_policy(session['user_id'], enabled=True, window_hours=None)
+    elif mode == "window":
+        result = set_cancellation_policy(session['user_id'], enabled=True,
+                                         window_hours=request.form.get("window_hours", ""))
+    else:
+        result = {"success": False, "message": "Please choose a cancellation option."}
+    flash(result["message"], "success" if result["success"] else "error")
+    return redirect(url_for('seller') + "#cancellation-policy")
 
 
 def render_messages(user_id, other_id=None, error=None, form=None, show_blocked=False):
