@@ -618,12 +618,27 @@ def handle_set_tags(product_id):
 @app.route("/cart/add/<int:product_id>", methods=["POST"])
 def cart_add(product_id):
     user_id = session.get('user_id', DEFAULT_ID)  # Fallback to user 1 for now
+
+    # The product must exist before it can go in a cart
+    product = get_product(product_id)
+    if product is None:
+        abort(404, description="That product no longer exists.")
+
+    # Quantity must be a whole number from 1 up to the stock on hand
     try:
         qty = int(request.form.get('quantity', 1))
-    except ValueError:
-        qty = 1
+    except (TypeError, ValueError):
+        abort(400, description="Quantity must be a whole number.")
+    if qty < 1:
+        abort(400, description="Quantity must be at least 1.")
+    if qty > product["stock"]:
+        abort(400, description=f"Only {product['stock']} left in stock.")
 
-    add_to_cart(user_id, product_id, qty)
+    try:
+        add_to_cart(user_id, product_id, qty)
+    except Exception:
+        app.logger.exception("Failed to add product %s to cart", product_id)
+        abort(500, description="Could not add the item to your cart. Please try again.")
     return redirect(url_for('cart'))
 
 
