@@ -67,11 +67,18 @@ def search_products(keyword):
     clauses = []
     params = []
     for word in words:
-        escaped = word.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
-        clauses.append("(title LIKE ? ESCAPE '\\' OR description LIKE ? ESCAPE '\\')")
+        # Case-fold the search word so 'MUG', 'Mug' and 'mug' all match the same products.
+        folded = word.casefold()
+        escaped = folded.replace('\\', '\\\\').replace('%', '\\%').replace('_', '\\_')
+        clauses.append(
+            "(CASEFOLD(title) LIKE ? ESCAPE '\\' OR CASEFOLD(description) LIKE ? ESCAPE '\\')"
+        )
         params.extend([f"%{escaped}%", f"%{escaped}%"])
 
     conn = sqlite3.connect(database.DB_PATH)
+    # SQLite's LIKE/LOWER only ignore case for ASCII letters, so fold the columns with
+    # Python's str.casefold() to compare case-insensitively for all characters (e.g. 'É' vs 'é').
+    conn.create_function("CASEFOLD", 1, lambda text: text.casefold() if text is not None else None)
     cursor = conn.cursor()
     cursor.execute(f'''
         SELECT product_id, seller_id, title, price, stock_quantity, description
